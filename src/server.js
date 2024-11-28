@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
-import { checkUserExists } from "./middlewares/authUsers.js";
+import { checkUserExists } from "./middlewares/authUsersMongoose.js";
 import { addToUsersCollection } from "./middlewares/authUsersMongoose.js";
 import { searchUsers } from "./middlewares/authUsersMongoose.js";
-import { addToGroupCollection } from "./middlewares/groups.js";
+// import { addToGroupCollection } from "./middlewares/groups.js";
 import { addNewEvent } from "./middlewares/eventMongoose.js"
-import { findEvent } from "./middlewares/eventMongoose.js";
+import { findOneEvent } from "./middlewares/eventMongoose.js";
 import { connectDB } from "./mongoose.js";
 const app = express();
 const port = 3000;
@@ -37,16 +37,16 @@ app.use((req,res, next)=>{
         console.log(req.result);
         res.status(200).json(req.result);
     });
-    app.post("/group",[addToGroupCollection],(req,res)=>{
-        // console.log(req.body);
-        res.status(200).json(req.body.result);
-    });
+    // app.post("/group",[addToGroupCollection],(req,res)=>{
+    //     // console.log(req.body);
+    //     res.status(200).json(req.body.result);
+    // });
     app.post("/event",[addNewEvent],(req,res)=>{
         res.status(200).json(req.newEventId);
     });
-    app.post("/api/files/query",[findEvent],(req,res)=>{
+    app.post("/api/files/query",[findOneEvent],(req,res)=>{
 
-        res.status(200).json(req.events);
+        res.status(200).json(req.event);
     });
     app.use((err, req, res, next)=>{
         // console.error(err.stack);

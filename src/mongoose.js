@@ -13,15 +13,27 @@ export const connectDB = async () => {
 };
 const userSchema = new mongoose.Schema({
     userName: { type: String},
-    email: { type: String, required: true },
-    password: { type: String, required: true },
+    email: { type: String, select: false, required: true  },
+    password: { type: String, select: false, required: true },
     mobileNumber: { type: String },
     otherContact: { type: String },
     createdEvents:[
-        {type: mongoose.Schema.Types.ObjectId, ref: "Event"} 
+        {
+            _id: {type: mongoose.Schema.Types.ObjectId, ref: "Event"},
+            title:{ type: String},
+            startTime:{ type: String},
+            endTime:{ type: String},
+        }
     ],
+
     receivedEvents:[
-        {type: mongoose.Schema.Types.ObjectId, ref: "Event"} 
+        {
+            _id: {type: mongoose.Schema.Types.ObjectId, ref: "Event"},
+            creatorName:{ type: String}, 
+            title:{ type: String},
+            startTime:{ type: String},
+            endTime:{ type: String},
+        }
     ],
 });
 
@@ -31,7 +43,9 @@ const eventSchema = new mongoose.Schema({
     title: { type: String},
     isReadByCreator: { type: Boolean},
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    createrName :{ type: String},
+    creatorName :{ type: String},
+    mobileNumber: { type: String },
+    otherContact: { type: String },
     type: { type: String},
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },

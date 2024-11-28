@@ -15,10 +15,12 @@ export const addNewEvent =async (req,res,next)=>{
         throw err;
     }
     console.log("event",newEventData);
-    newEventData.isReadByCreator = true;
+    newEventData.isReadByCreator = false;
         newEventData.gasts = newEventData.gasts.map(gast =>({
             ...gast,
             isRead:false,
+            // isJoinIn:false,
+
         }));
         const newEvent = await Event.create(newEventData);
 
@@ -29,18 +31,26 @@ export const addNewEvent =async (req,res,next)=>{
        // // 更新创建者的 createdEvents 数组
        await User.updateOne(
            { _id: createdBy },
-           { $push: { createdEvents: newEventId } }
+           { $push: { createdEvents: {_id: newEventId,
+                                        // creatorName: newEvent.creatorName,
+                                        title: newEvent.title,
+                                        startTime:newEvent.startTime,
+                                        endTime: newEvent.endTime} } }
        );
   
        // // 更新所有客人的 receivedEvents 数组
-       const gastsAsObjectIds = newEventData.gasts.map((gast) => gast._id);
+       const gastsAsObjectIds = newEvent.gasts.map((gast) => gast._id);
        // console.log(gastsAsObjectIds);
     //    const matchedDocs = await User.find({ _id: { $in: gastsAsObjectIds } });
        // console.log("matchedDocs",matchedDocs);
 
        await User.updateMany(
            { _id: { $in: gastsAsObjectIds } },
-           { $push: { receivedEvents: newEventId } }
+           { $push: { receivedEvents: {_id: newEventId,
+                                        creatorName: newEvent.creatorName,
+                                        title: newEvent.title,
+                                        startTime:newEvent.startTime,
+                                        endTime: newEvent.endTime } } }
        );
   
        // 返回创建者的完整信息，包括更新后的 createdEvents 和 receivedEvents
@@ -59,21 +69,51 @@ export const addNewEvent =async (req,res,next)=>{
        next(error);
    }
 }
-export const findEvent =async (req,res,next)=>{
+export const findOneEvent =async (req,res,next)=>{
    try {
 
-       const { ids, userId } = req.body;
-   
+       const { id, userId } = req.body;
+
        const query = {
-           _id: { $in: ids },
+           _id: id,
            createdBy: userId
        }
-       const events = await Event.find(query);
-       console.log("findEvent", events);
+       const event = await Event.findOne(query);
+       if(event.createdBy._id.toString() === userId){
+            event.isReadByCreator = true;
+       }
+       for(let gast of event.gasts){
+        if(gast._id.toString() === userId){
+            gast.isRead = true;
+        }
+       }
+       await event.save();
+       console.log("findOneEvent", event);
 
-       req.events = events;
+       req.event = event;
        next();
    } catch (error) {
+    console.log(error);
        next(error);
    }
 }
+export const findEvent =async (req,res,next)=>{
+    try {
+ 
+        const { ids, userId } = req.body;
+ 
+        const query = {
+            _id: { $in: ids },
+            createdBy: userId
+        }
+        const events = await Event.find(query);
+        console.log("findEvent", events);
+ 
+        req.events = events;
+        next();
+    } catch (error) {
+        console.log(error);
+
+        next(error);
+    }
+ }

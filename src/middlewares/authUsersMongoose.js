@@ -1,21 +1,20 @@
 import { User } from "../mongoose.js";
-
-
 const RESULT_LIST_LIMIT = 10;
+
 export  const checkUserExists = async (req,res,next)=>{
     try {
         const {email, password} = req.body;
-        const user = await User.findOne({ email: email });
-        if(!user || user.password !== password){
+        const user = await User.findOne({ email: email, password: password });
+        if(!user){
             const err = new Error("Invalid email or password");
             err.status = 401;
             next(err);
         }
-        req.loginRes = {};
-        req.loginRes.userName = user.userName;
-        req.loginRes.id = user._id;
+        req.loginRes = user;
+
         next();
     } catch (error) {
+        console.log(error);
         next(error);
     }
 }
@@ -36,6 +35,8 @@ export const addToUsersCollection =async (req,res,next)=>{
         console.log("Document inserted successfully!");
         next();
     } catch (error) {
+        console.log(error);
+
         next(error);
     }
 }
@@ -71,6 +72,8 @@ export const searchUsers = async(req, res, next)=>{
 
         next();
     } catch (error) {
+        console.log(error);
+
         next(error);
     }
 }
