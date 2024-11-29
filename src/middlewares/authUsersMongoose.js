@@ -31,7 +31,8 @@ export const addToUsersCollection =async (req,res,next)=>{
             next(err);
             return;
         }
-        await User.create(req.body);
+        const newUser = await User.create(req.body);
+        req.newUser = newUser;
         console.log("Document inserted successfully!");
         next();
     } catch (error) {

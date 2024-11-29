@@ -1,8 +1,15 @@
+import { MongoNetworkError } from "mongodb";
 import mongoose  from "mongoose";
 const uri = 'mongodb://localhost:27017';
 const dbName = 'myAppointments';
 export const connectDB = async () => {
     try {
+        // mongoose.connection.on("error",()=>{
+        //     console.log()
+        // })
+        // mongoose.connection.on("connect",()=>{
+        //     console.log()
+        // })
         await mongoose.connect("mongodb://localhost:27017/myAppointments");
         console.log("MongoDB connected myAppointments!");
     } catch (error) {
@@ -11,6 +18,7 @@ export const connectDB = async () => {
         throw error;
     }
 };
+// export const connectDB = 
 const userSchema = new mongoose.Schema({
     userName: { type: String},
     email: { type: String, select: false, required: true  },
@@ -56,7 +64,7 @@ const eventSchema = new mongoose.Schema({
         {
             _id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
             userName: { type: String },
-            isJoinIn: { type: Boolean },
+            isJoinIn: { type: Number },
             isRead: { type: Boolean },
             feedback: { type: String },
         },
@@ -66,8 +74,12 @@ const eventSchema = new mongoose.Schema({
             title: { type: String },
             description: { type: String },
             performerCount: { type: Number },
+            id: { type: String },
             performers:[
-                {type: mongoose.Schema.Types.ObjectId, ref: "User"} 
+                {
+                    _id: {type: mongoose.Schema.Types.ObjectId, ref: "User"},
+                    userName: { type: String },
+                }
             ]
         },
     ],
@@ -76,8 +88,12 @@ const eventSchema = new mongoose.Schema({
             title: { type: String },
             description: { type: String },
             providerCount: { type: Number },
+            id: { type: String },
             providers:[
-                {type: mongoose.Schema.Types.ObjectId, ref: "User"} 
+                {
+                    _id: {type: mongoose.Schema.Types.ObjectId, ref: "User"},
+                    userName: { type: String },
+                }
             ]
         },
     ]

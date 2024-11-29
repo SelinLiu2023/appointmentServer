@@ -6,6 +6,7 @@ import { searchUsers } from "./middlewares/authUsersMongoose.js";
 // import { addToGroupCollection } from "./middlewares/groups.js";
 import { addNewEvent } from "./middlewares/eventMongoose.js"
 import { findOneEvent } from "./middlewares/eventMongoose.js";
+import { updateInvitation } from "./middlewares/eventMongoose.js";
 import { connectDB } from "./mongoose.js";
 const app = express();
 const port = 3000;
@@ -30,8 +31,8 @@ app.use((req,res, next)=>{
     });
     
     app.post("/register", [addToUsersCollection],(req,res)=>{
-        // console.log(req.body);
-        res.status(200).json({userName: req.body.userName});
+        console.log("req.newUser",req.newUser);
+        res.status(200).json(req.newUser);
     });
     app.get("/search",[searchUsers],(req,res)=>{
         console.log(req.result);
@@ -43,6 +44,9 @@ app.use((req,res, next)=>{
     // });
     app.post("/event",[addNewEvent],(req,res)=>{
         res.status(200).json(req.newEventId);
+    });
+    app.patch("/event/:id",[updateInvitation],(req,res)=>{
+        // res.status(200).json({event:req.event,updateCompleted:req.updateCompleted});
     });
     app.post("/api/files/query",[findOneEvent],(req,res)=>{
 
