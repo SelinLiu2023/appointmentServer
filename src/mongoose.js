@@ -97,7 +97,7 @@ const eventSchema = new mongoose.Schema({
             ]
         },
     ]
-});
+},{ versionKey: false });
 
 export const User = mongoose.model("user", userSchema);
 export const Event = mongoose.model("event", eventSchema);

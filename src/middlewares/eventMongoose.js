@@ -205,3 +205,19 @@ export const findEvent =async (req,res,next)=>{
         console.log(error)
     }
 };
+export const updateEvent =async (req,res, next)=>{
+
+    try {
+        const id = req.params.id;
+        console.log("updateEvent",id);
+        // console.log("updateEvent",req.body)
+        const eventObjectId = new mongoose.Types.ObjectId(id);
+    
+        const result = await Event.replaceOne({_id: eventObjectId}, req.body);
+        console.log("updateEvent",result)
+        req.result= result;
+        next();
+    } catch (error) {
+        console.log(error);
+    }
+};

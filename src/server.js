@@ -8,6 +8,7 @@ import { addNewEvent } from "./middlewares/eventMongoose.js"
 import { findOneEvent } from "./middlewares/eventMongoose.js";
 import { updateInvitation } from "./middlewares/eventMongoose.js";
 import { connectDB } from "./mongoose.js";
+import { updateEvent } from "./middlewares/eventMongoose.js";
 const app = express();
 const port = 3000;
 
@@ -47,6 +48,9 @@ app.use((req,res, next)=>{
     });
     app.patch("/event/:id",[updateInvitation],(req,res)=>{
         // res.status(200).json({event:req.event,updateCompleted:req.updateCompleted});
+    });
+    app.put("/event/:id",[updateEvent],(req,res)=>{
+        res.status(200).json({result: req.result});
     });
     app.post("/api/files/query",[findOneEvent],(req,res)=>{
 
