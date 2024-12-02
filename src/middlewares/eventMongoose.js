@@ -15,7 +15,7 @@ export const addNewEvent =async (req,res,next)=>{
         throw err;
     }
     console.log("event",newEventData);
-    newEventData.isReadByCreator = false;
+    // newEventData.isReadByCreator = false;
         newEventData.gasts = newEventData.gasts.map(gast =>({
             ...gast,
             isRead:false,
@@ -97,26 +97,26 @@ export const findOneEvent =async (req,res,next)=>{
        next(error);
    }
 };
-export const findEvent =async (req,res,next)=>{
-    try {
+// export const findEvent =async (req,res,next)=>{
+//     try {
  
-        const { ids, userId } = req.body;
+//         const { ids, userId } = req.body;
  
-        const query = {
-            _id: { $in: ids },
-            createdBy: userId
-        }
-        const events = await Event.find(query);
-        console.log("findEvent", events);
+//         const query = {
+//             _id: { $in: ids },
+//             createdBy: userId
+//         }
+//         const events = await Event.find(query);
+//         console.log("findEvent", events);
  
-        req.events = events;
-        next();
-    } catch (error) {
-        console.log(error);
+//         req.events = events;
+//         next();
+//     } catch (error) {
+//         console.log(error);
 
-        next(error);
-    }
- };
+//         next(error);
+//     }
+//  };
  export const updateInvitation =async (req,res, next)=>{
     try {
         const id = req.params.id;
@@ -210,9 +210,32 @@ export const updateEvent =async (req,res, next)=>{
     try {
         const id = req.params.id;
         console.log("updateEvent",id);
-        // console.log("updateEvent",req.body)
+        
         const eventObjectId = new mongoose.Types.ObjectId(id);
-    
+        const event = await Event.findOne({_id: eventObjectId});
+        const newGuestsIds = req.body.gasts.map(guest=>guest._id);
+        const oldGuestsIds = event.gasts.map(guest=>guest._id.toString());
+        console.log("newGuestsIds",newGuestsIds)
+
+        console.log("oldGuestsIds",oldGuestsIds)
+
+        const addGuests = newGuestsIds.filter(guest=>!oldGuestsIds.find(item=>item=== guest)).map(item=>new mongoose.Types.ObjectId(item));
+        console.log("addGuests",addGuests);
+
+        if(addGuests.length >0){
+            const result = await User.updateMany({_id: {$in: addGuests} }, {$push: {receivedEvents: {_id: event._id,
+                                                    creatorName: event.creatorName,
+                                                    title: event.title,
+                                                    startTime:event.startTime,
+                                                    endTime: event.endTime } }});
+            console.log("addGuests result",result)
+        }
+        const deleteGuests = oldGuestsIds.filter(guest=>!newGuestsIds.find(item=>item=== guest)).map(item=>new mongoose.Types.ObjectId(item));
+        console.log("deleteGuests",deleteGuests);
+        if(deleteGuests.length >0){
+            await User.updateMany({_id: {$in: deleteGuests} }, {$pull: {receivedEvents: {_id: event._id}}});
+
+        }
         const result = await Event.replaceOne({_id: eventObjectId}, req.body);
         console.log("updateEvent",result)
         req.result= result;

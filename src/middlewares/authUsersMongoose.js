@@ -1,4 +1,6 @@
 import { User } from "../mongoose.js";
+import mongoose  from "mongoose";
+
 const RESULT_LIST_LIMIT = 10;
 
 export  const checkUserExists = async (req,res,next)=>{
@@ -11,6 +13,26 @@ export  const checkUserExists = async (req,res,next)=>{
             next(err);
         }
         req.loginRes = user;
+
+        next();
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
+}
+export const getUser = async(req,res,next)=>{
+    console.log("getuser")
+    try {
+        console.log("getuser", req.params.id)
+        const userId = req.params.id;
+        const user = await User.findOne({ _id:  new mongoose.Types.ObjectId(userId)},{ email: 0, password: 0} );
+        if(!user){
+            const err = new Error("user not found");
+
+            err.status = 401;
+            next(err);
+        }
+        req.user = user;
 
         next();
     } catch (error) {

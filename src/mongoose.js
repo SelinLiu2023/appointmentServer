@@ -51,6 +51,7 @@ const eventSchema = new mongoose.Schema({
     title: { type: String},
     isReadByCreator: { type: Boolean},
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    status: { type: Number },
     creatorName :{ type: String},
     mobileNumber: { type: String },
     otherContact: { type: String },

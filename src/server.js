@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { checkUserExists } from "./middlewares/authUsersMongoose.js";
+import { checkUserExists, getUser } from "./middlewares/authUsersMongoose.js";
 import { addToUsersCollection } from "./middlewares/authUsersMongoose.js";
 import { searchUsers } from "./middlewares/authUsersMongoose.js";
 // import { addToGroupCollection } from "./middlewares/groups.js";
@@ -9,6 +9,7 @@ import { findOneEvent } from "./middlewares/eventMongoose.js";
 import { updateInvitation } from "./middlewares/eventMongoose.js";
 import { connectDB } from "./mongoose.js";
 import { updateEvent } from "./middlewares/eventMongoose.js";
+
 const app = express();
 const port = 3000;
 
@@ -30,7 +31,12 @@ app.use((req,res, next)=>{
         console.log("req.loginRes",req.loginRes);
         res.status(200).json(req.loginRes);
     });
-    
+    // app.get("/user:id",[getUser],(req,res)=>{
+    //     res.status(200).json(req.user);
+    // })
+    app.get("/user/:id",[getUser],(req,res)=>{
+        res.status(200).json(req.user);
+    });
     app.post("/register", [addToUsersCollection],(req,res)=>{
         console.log("req.newUser",req.newUser);
         res.status(200).json(req.newUser);
