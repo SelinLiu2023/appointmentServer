@@ -1,177 +1,102 @@
-// import { eventsDB } from "../db.js";
 import { User } from "../mongoose.js";
-// import { ObjectId } from "mongodb";
 import { Event } from "../mongoose.js";
 import mongoose  from "mongoose";
-
 export const addNewEvent =async (req,res,next)=>{
-   try {
-    console.log("addNewEvent");
-      const newEventData = req.body;
-      const {createdBy} = newEventData;
-      if(!mongoose.Types.ObjectId.isValid(newEventData.createdBy)){
+    try {
+        const newEventData = req.body;
+        const {createdBy} = newEventData;
+        if(!mongoose.Types.ObjectId.isValid(newEventData.createdBy)){
         console.log("wrong id", newEventData.createdBy);
         const err = new Error("wrong id");
         throw err;
-    }
-    console.log("event",newEventData);
-    // newEventData.isReadByCreator = false;
+        }
         newEventData.gasts = newEventData.gasts.map(gast =>({
             ...gast,
-            isRead:false,
-            // isJoinIn:false,
-
         }));
         const newEvent = await Event.create(newEventData);
+        const newEventId = newEvent._id;
+        newEventData.id = newEventId;
+        await User.updateOne(
+            { _id: createdBy },
+            { $push: { createdEvents: {_id: newEventId,
+                        title: newEvent.title,
+                        startTime:newEvent.startTime,
+                        endTime: newEvent.endTime,
+                        status: 0,
+                        isRead: true
+                    } } }
+        );
+        const gastsAsObjectIds = newEvent.gasts.map((gast) => gast._id);
+        await User.updateMany(
+            { _id: { $in: gastsAsObjectIds } },
+            { $push: { receivedEvents: {_id: newEventId,
+                                    creatorName: newEvent.creatorName,
+                                    title: newEvent.title,
+                                    startTime:newEvent.startTime,
+                                    endTime: newEvent.endTime,
+                                    status: 0,
+                                    isRead: false } } }
+        );
+        req.newEventId = newEventId;
+        next();
 
-       const newEventId = newEvent._id;
-       newEventData.id = newEventId;
- 
-
-       // // 更新创建者的 createdEvents 数组
-       await User.updateOne(
-           { _id: createdBy },
-           { $push: { createdEvents: {_id: newEventId,
-                                        // creatorName: newEvent.creatorName,
-                                        title: newEvent.title,
-                                        startTime:newEvent.startTime,
-                                        endTime: newEvent.endTime} } }
-       );
-  
-       // // 更新所有客人的 receivedEvents 数组
-       const gastsAsObjectIds = newEvent.gasts.map((gast) => gast._id);
-       // console.log(gastsAsObjectIds);
-    //    const matchedDocs = await User.find({ _id: { $in: gastsAsObjectIds } });
-       // console.log("matchedDocs",matchedDocs);
-
-       await User.updateMany(
-           { _id: { $in: gastsAsObjectIds } },
-           { $push: { receivedEvents: {_id: newEventId,
-                                        creatorName: newEvent.creatorName,
-                                        title: newEvent.title,
-                                        startTime:newEvent.startTime,
-                                        endTime: newEvent.endTime } } }
-       );
-  
-       // 返回创建者的完整信息，包括更新后的 createdEvents 和 receivedEvents
-    //    const creator = await User.findOne(
-    //        { _id: createdBy }
-    //    );
-  
-       // console.log('Updated Creator:', creator);
-       req.newEventId = newEventId;
-
-       // console.log("newEventId", req.newEventId)
-       next();
-
-   } catch (error) {
-    console.log(error)
-       next(error);
-   }
+    } catch (error) {
+        console.log(error)
+        next(error);
+    }
 };
 export const findOneEvent =async (req,res,next)=>{
-   try {
+    try {
 
-       const { id, userId } = req.body;
-
-       const query = {
-           _id: id,
-        //    createdBy: userId
-       }
-       const event = await Event.findOne(query);
-       if(event.createdBy._id.toString() === userId){
-            event.isReadByCreator = true;
-       }
-       for(let gast of event.gasts){
-        if(gast._id.toString() === userId){
-            gast.isRead = true;
+        const { id, userId } = req.body;
+        const eventObjectId = new mongoose.Types.ObjectId(id);
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const event = await Event.findOne({_id : eventObjectId});
+        if(userId === event.createdBy.toString()){
+            await User.updateOne({_id: userObjectId, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : true}})
+        }else if (event.gasts.find(gast=>gast._id.equals(userObjectId))){
+            await User.updateOne({_id: userObjectId, "receivedEvents._id": eventObjectId}, {$set: {"receivedEvents.$.isRead" : true}})
         }
-       }
-       await event.save();
-       console.log("findOneEvent", event);
-
-       req.event = event;
-       next();
-   } catch (error) {
-    console.log(error);
-       next(error);
-   }
+        req.event = event;
+        next();
+    } catch (error) {
+        console.log(error);
+        next(error);
+    }
 };
-// export const findEvent =async (req,res,next)=>{
-//     try {
- 
-//         const { ids, userId } = req.body;
- 
-//         const query = {
-//             _id: { $in: ids },
-//             createdBy: userId
-//         }
-//         const events = await Event.find(query);
-//         console.log("findEvent", events);
- 
-//         req.events = events;
-//         next();
-//     } catch (error) {
-//         console.log(error);
-
-//         next(error);
-//     }
-//  };
- export const updateInvitation =async (req,res, next)=>{
+export const updateInvitation =async (req,res, next)=>{
     try {
         const id = req.params.id;
-        console.log(id)
         const eventObjectId = new mongoose.Types.ObjectId(id);
-        console.log(updateInvitation);
         if(req.body.editByCreator === 1) next();
         const {action, guestId, isJoinIn,tasks, guestName} = req.body;
         const guestObjectId = new mongoose.Types.ObjectId(guestId);
         //no task
-        const result = await Event.updateOne({ _id: eventObjectId, "gasts._id": guestObjectId},
+        const findEvent = await Event.findOneAndUpdate({ _id: eventObjectId, "gasts._id": guestObjectId},
         {$set: {"gasts.$.isJoinIn": isJoinIn}});
-
+        await User.updateOne({_id: findEvent.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : false, "createdEvents.$.status" : 1}})
         if(action === 0){
-            // const result = await Event.updateOne({ _id: eventObjectId, "gasts._id": guestObjectId},
-            //                                     {$set: {"gasts.$.isJoinIn": isJoinIn}});
             req.result = result;
             res.status(200).json(req.result);
             return;
         }else if(action === 1){
-            // console.log("action 1")
             let tasksCount = tasks.length;
             let updated = false;
             const event = await Event.findOne({ _id: eventObjectId});
             const guest = event.gasts.find(gast=>gast._id.toString() === guestId);
             guest.isJoinIn = isJoinIn;
-            // console.log("event.tasks",event.tasks)
-            // const taskMap = new Map(event.tasks.map(task => [task.id, task]));
-            // console.log("tasks",tasks)
             for(let item of tasks){
                 const findTask = event.tasks.find(task=> task.id == item);
-                // const findTask = taskMap.get(item);
-                // console.log("findTask", findTask)
                 if(findTask.performerCount > findTask.performers.length &&  !findTask.performers.find(performer=>performer._id.toString() === guestId)){
-                    // console.log("findTask.performers",findTask.performers)
-                    // findTask.performers = [...findTask.performers,
-                    //     {_id: guestObjectId, userName:guestName}];
                     findTask.performers.push({_id: guestObjectId, userName:guestName});
-                    // console.log("findTask.performers",findTask.performers)
-
                     updated = true;
                     tasksCount--;
                 }else if(findTask.performers.find(performer=>performer._id.toString() === guestId)){
-                    // console.log("findTask.performers",findTask.performers)
-                    // findTask.performers = [...findTask.performers,
-                    //     {_id: guestObjectId, userName:guestName}];
                     findTask.performers = findTask.performers.filter(performer=>performer._id.toString() !== guestId);
-                    // console.log("findTask.performers",findTask.performers)
-
                     updated = true;
                     tasksCount--;
                 }
             }
-            // console.log("updated",updated);
-            // console.log("tasksCount",tasksCount);
             if(updated){
                 await event.save();
                 req.event = event;
@@ -182,8 +107,6 @@ export const findOneEvent =async (req,res,next)=>{
             }else{
                 req.updateCompleted =false;
             }
-            
-            // console.log(req.updateCompleted,req.event)
             res.status(200).json({event:req.event,updateCompleted:req.updateCompleted});
             return;
         }else if(action == -1){
@@ -197,47 +120,36 @@ export const findOneEvent =async (req,res,next)=>{
             req.result = result;
             res.status(200).json(req.result);
             return;
-    
         }
-        // console.log(id);
         next();
     } catch (error) {
         console.log(error)
     }
 };
 export const updateEvent =async (req,res, next)=>{
-
     try {
         const id = req.params.id;
-        console.log("updateEvent",id);
-        
         const eventObjectId = new mongoose.Types.ObjectId(id);
         const event = await Event.findOne({_id: eventObjectId});
         const newGuestsIds = req.body.gasts.map(guest=>guest._id);
         const oldGuestsIds = event.gasts.map(guest=>guest._id.toString());
-        console.log("newGuestsIds",newGuestsIds)
-
-        console.log("oldGuestsIds",oldGuestsIds)
-
         const addGuests = newGuestsIds.filter(guest=>!oldGuestsIds.find(item=>item=== guest)).map(item=>new mongoose.Types.ObjectId(item));
-        console.log("addGuests",addGuests);
-
+        await User.updateOne({_id: event.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : true, "createdEvents.$.status" : 1}})
+        const userUpdate = await User.updateMany({_id: {$in: newGuestsIds}, "receivedEvents._id": eventObjectId}, {$set: {"receivedEvents.$[elem].isRead" : false, "receivedEvents.$[elem].status" : 1}}, {arrayFilters: [{"elem._id" : eventObjectId}]});
         if(addGuests.length >0){
             const result = await User.updateMany({_id: {$in: addGuests} }, {$push: {receivedEvents: {_id: event._id,
                                                     creatorName: event.creatorName,
                                                     title: event.title,
                                                     startTime:event.startTime,
-                                                    endTime: event.endTime } }});
-            console.log("addGuests result",result)
+                                                    endTime: event.endTime,
+                                                    status : 0,
+                                                    isRead: false } }});
         }
         const deleteGuests = oldGuestsIds.filter(guest=>!newGuestsIds.find(item=>item=== guest)).map(item=>new mongoose.Types.ObjectId(item));
-        console.log("deleteGuests",deleteGuests);
         if(deleteGuests.length >0){
             await User.updateMany({_id: {$in: deleteGuests} }, {$pull: {receivedEvents: {_id: event._id}}});
-
         }
         const result = await Event.replaceOne({_id: eventObjectId}, req.body);
-        console.log("updateEvent",result)
         req.result= result;
         next();
     } catch (error) {

@@ -31,6 +31,8 @@ const userSchema = new mongoose.Schema({
             title:{ type: String},
             startTime:{ type: String},
             endTime:{ type: String},
+            status: { type: Number},
+            isRead: { type: Boolean}
         }
     ],
 
@@ -41,6 +43,8 @@ const userSchema = new mongoose.Schema({
             title:{ type: String},
             startTime:{ type: String},
             endTime:{ type: String},
+            status: { type: Number},
+            isRead: { type: Boolean}
         }
     ],
 });
@@ -49,7 +53,7 @@ userSchema.index({ userName: "text", email: "text" });
 
 const eventSchema = new mongoose.Schema({
     title: { type: String},
-    isReadByCreator: { type: Boolean},
+    // isReadByCreator: { type: Boolean},
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     status: { type: Number },
     creatorName :{ type: String},
