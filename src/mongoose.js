@@ -47,6 +47,13 @@ const userSchema = new mongoose.Schema({
             isRead: { type: Boolean}
         }
     ],
+    savedDrafts:[
+        {
+            _id: {type: mongoose.Schema.Types.ObjectId, ref: "Event"},
+            title:{ type: String},
+            saveTime: { type: Date},
+        }
+    ]
 });
 
 userSchema.index({ userName: "text", email: "text" });
@@ -101,8 +108,11 @@ const eventSchema = new mongoose.Schema({
                 }
             ]
         },
-    ]
+    ],
 },{ versionKey: false });
-
+const draftSchema = new mongoose.Schema({
+    "title": {type: String},
+},{ timestamps: true });
+export const Draft = mongoose.model("draft", eventSchema);
 export const User = mongoose.model("user", userSchema);
 export const Event = mongoose.model("event", eventSchema);

@@ -8,6 +8,11 @@ import { findOneEvent } from "./middlewares/eventMongoose.js";
 import { updateInvitation } from "./middlewares/eventMongoose.js";
 import { connectDB } from "./mongoose.js";
 import { updateEvent } from "./middlewares/eventMongoose.js";
+import { addDraft } from "./middlewares/draftMongoose.js";
+import { getDraft } from "./middlewares/draftMongoose.js";
+import { replaceDraft } from "./middlewares/draftMongoose.js";
+import { deleteDraft } from "./middlewares/draftMongoose.js";
+
 
 const app = express();
 const port = 3000;
@@ -45,6 +50,18 @@ app.use((req,res, next)=>{
     });
     app.post("/api/files/query",[findOneEvent],(req,res)=>{
         res.status(200).json(req.event);
+    });
+    app.post("/draft",[addDraft],(req,res)=>{
+        res.status(200).send();
+    });
+    app.get("/draft/:id",[getDraft],(req,res)=>{
+        res.status(200).json(req.result);
+    });
+    app.put("/draft/:id",[replaceDraft],(req,res)=>{
+        res.status(200).json(req.result);
+    });
+    app.delete("/draft/:id",[deleteDraft],(req,res)=>{
+        res.status(200).json(req.result);
     });
     app.use((err, req, res, next)=>{
         res.status(err.status || 400).json({ message: err.message });

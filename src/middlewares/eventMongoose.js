@@ -4,6 +4,7 @@ import mongoose  from "mongoose";
 export const addNewEvent =async (req,res,next)=>{
     try {
         const newEventData = req.body;
+        
         const {createdBy} = newEventData;
         if(!mongoose.Types.ObjectId.isValid(newEventData.createdBy)){
         console.log("wrong id", newEventData.createdBy);
@@ -16,6 +17,7 @@ export const addNewEvent =async (req,res,next)=>{
         const newEvent = await Event.create(newEventData);
         const newEventId = newEvent._id;
         newEventData.id = newEventId;
+
         await User.updateOne(
             { _id: createdBy },
             { $push: { createdEvents: {_id: newEventId,
