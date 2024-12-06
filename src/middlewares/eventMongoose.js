@@ -49,7 +49,6 @@ export const addNewEvent =async (req,res,next)=>{
 };
 export const findOneEvent =async (req,res,next)=>{
     try {
-
         const { id, userId } = req.body;
         const eventObjectId = new mongoose.Types.ObjectId(id);
         const userObjectId = new mongoose.Types.ObjectId(userId);
@@ -76,10 +75,10 @@ export const updateInvitation =async (req,res, next)=>{
         //no task
         const findEvent = await Event.findOneAndUpdate({ _id: eventObjectId, "gasts._id": guestObjectId},
         {$set: {"gasts.$.isJoinIn": isJoinIn}});
-        await User.updateOne({_id: findEvent.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : false, "createdEvents.$.status" : 1}})
+        const result = await User.updateOne({_id: findEvent.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : false, "createdEvents.$.status" : 1}})
         if(action === 0){
-            req.result = result;
-            res.status(200).json(req.result);
+            req.updateCompleted =true;
+            res.status(200).json({updateCompleted:true});
             return;
         }else if(action === 1){
             let tasksCount = tasks.length;
@@ -119,8 +118,8 @@ export const updateInvitation =async (req,res, next)=>{
                     {"elem.id": {$in: tasks}}
                 ]}
                 );
-            req.result = result;
-            res.status(200).json(req.result);
+            // req.result = updateCompleted;
+            res.status(200).json({updateCompleted:true});
             return;
         }
         next();
@@ -133,11 +132,22 @@ export const updateEvent =async (req,res, next)=>{
         const id = req.params.id;
         const eventObjectId = new mongoose.Types.ObjectId(id);
         const event = await Event.findOne({_id: eventObjectId});
+        //
+        const eventStatus = event?.status || "";
+        if(eventStatus === -1){
+            console.log("eventStatus", eventStatus);
+            const guestsIds = event.gasts.map(guest=>guest._id.toString());
+            await User.updateOne({_id: event.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : true, "createdEvents.$.status" : -1}})
+            const result = await User.updateMany({_id: {$in: guestsIds}, "receivedEvents._id": eventObjectId}, {$set: {"receivedEvents.$[elem].isRead" : false, "receivedEvents.$[elem].status" : -1}}, {arrayFilters: [{"elem._id" : eventObjectId}]});
+            req.result = result;
+            next();
+            return;
+        }
         const newGuestsIds = req.body.gasts.map(guest=>guest._id);
         const oldGuestsIds = event.gasts.map(guest=>guest._id.toString());
         const addGuests = newGuestsIds.filter(guest=>!oldGuestsIds.find(item=>item=== guest)).map(item=>new mongoose.Types.ObjectId(item));
         await User.updateOne({_id: event.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : true, "createdEvents.$.status" : 1}})
-        const userUpdate = await User.updateMany({_id: {$in: newGuestsIds}, "receivedEvents._id": eventObjectId}, {$set: {"receivedEvents.$[elem].isRead" : false, "receivedEvents.$[elem].status" : 1}}, {arrayFilters: [{"elem._id" : eventObjectId}]});
+        await User.updateMany({_id: {$in: newGuestsIds}, "receivedEvents._id": eventObjectId}, {$set: {"receivedEvents.$[elem].isRead" : false, "receivedEvents.$[elem].status" : 1}}, {arrayFilters: [{"elem._id" : eventObjectId}]});
         if(addGuests.length >0){
             const result = await User.updateMany({_id: {$in: addGuests} }, {$push: {receivedEvents: {_id: event._id,
                                                     creatorName: event.creatorName,
