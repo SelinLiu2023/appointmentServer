@@ -21,6 +21,7 @@ export const getUser = async(req,res,next)=>{
     try {
         const userId = req.params.id;
         const user = await User.findOne({ _id:  new mongoose.Types.ObjectId(userId)},{ email: 0, password: 0} );
+        
         if(!user){
             const err = new Error("user not found");
             err.status = 401;
