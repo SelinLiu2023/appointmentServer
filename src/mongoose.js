@@ -1,4 +1,5 @@
 import { MongoNetworkError } from "mongodb";
+import validator from "validator"; 
 import mongoose  from "mongoose";
 const uri = 'mongodb://localhost:27017';
 const dbName = 'myAppointments';
@@ -21,13 +22,31 @@ export const connectDB = async () => {
 // export const connectDB = 
 const userSchema = new mongoose.Schema({
     userName: { type: String},
-    email: { type: String, select: false, required: true  },
-    password: { type: String, select: false, required: true },
+    // email: { type: String, select: false, required: true  },
+    email: {
+        type: String,
+        select: false,
+        required: true, 
+        //add email validator
+        validate: {
+            validator: function(value) {
+                return validator.isEmail(value); 
+            },
+            message: function(props) {
+                return `${props.value} is an invalid email`; 
+            }
+        }
+    },
+    password: { type: String,  required: true },
+    // add email link verification for registration
+    isVerified: { type: Boolean, default: false },  
+    verificationToken: { type: String },  
+
     mobileNumber: { type: String },
     otherContact: { type: String },
     createdEvents:[
         {
-            _id: {type: mongoose.Schema.Types.ObjectId, ref: "Event"},
+            _id: {type: mongoose.Schema.Types.ObjectId, ref: "event"},
             title:{ type: String},
             startTime:{ type: String},
             endTime:{ type: String},
@@ -38,7 +57,7 @@ const userSchema = new mongoose.Schema({
 
     receivedEvents:[
         {
-            _id: {type: mongoose.Schema.Types.ObjectId, ref: "Event"},
+            _id: {type: mongoose.Schema.Types.ObjectId, ref: "event"},
             creatorName:{ type: String}, 
             title:{ type: String},
             startTime:{ type: String},
@@ -49,7 +68,7 @@ const userSchema = new mongoose.Schema({
     ],
     savedDrafts:[
         {
-            _id: {type: mongoose.Schema.Types.ObjectId, ref: "Event"},
+            _id: {type: mongoose.Schema.Types.ObjectId, ref: "draft"},
             title:{ type: String},
             saveTime: { type: Date},
         }
@@ -57,6 +76,14 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.index({ userName: "text", email: "text" });
+// userSchema.methods.toJSON = function () {
+//     const obj = this.toObject();
+  
+//     delete obj.password;
+//     delete obj.__v;
+  
+//     return obj;
+//   };
 
 const eventSchema = new mongoose.Schema({
     title: { type: String},
@@ -99,9 +126,9 @@ const eventSchema = new mongoose.Schema({
         {
             title: { type: String },
             description: { type: String },
-            providerCount: { type: Number },
+            // providerCount: { type: Number },
             id: { type: String },
-            providers:[
+            performers:[
                 {
                     _id: {type: mongoose.Schema.Types.ObjectId, ref: "User"},
                     userName: { type: String },

@@ -3,6 +3,8 @@ import cors from "cors";
 import { checkUserExists, getUser } from "./middlewares/authUsersMongoose.js";
 import { addToUsersCollection } from "./middlewares/authUsersMongoose.js";
 import { searchUsers } from "./middlewares/authUsersMongoose.js";
+import { verifyEmail } from "./middlewares/authUsersMongoose.js";
+
 import { addNewEvent } from "./middlewares/eventMongoose.js"
 import { findOneEvent } from "./middlewares/eventMongoose.js";
 import { updateInvitation } from "./middlewares/eventMongoose.js";
@@ -35,6 +37,7 @@ app.use((req,res, next)=>{
         console.log("req.newUser",req.newUser);
         res.status(200).json(req.newUser);
     });
+    app.get("/verify-email", verifyEmail);
     app.get("/search",[searchUsers],(req,res)=>{
         console.log(req.result);
         res.status(200).json(req.result);

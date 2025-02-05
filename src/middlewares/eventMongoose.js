@@ -74,8 +74,12 @@ export const updateInvitation =async (req,res, next)=>{
         const guestObjectId = new mongoose.Types.ObjectId(guestId);
         //no task
         const findEvent = await Event.findOneAndUpdate({ _id: eventObjectId, "gasts._id": guestObjectId},
-        {$set: {"gasts.$.isJoinIn": isJoinIn}});
-        const result = await User.updateOne({_id: findEvent.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : false, "createdEvents.$.status" : 1}})
+        {$set: {"gasts.$.isJoinIn": isJoinIn, status: 1}});//xiangyu add status:1
+        const result = await User.updateOne({_id: findEvent.createdBy, "createdEvents._id": eventObjectId}, {$set: {"createdEvents.$.isRead" : false, "createdEvents.$.status" : 1}});
+        // await User.updateMany({});
+        const guestsIds = findEvent.gasts.filter(gast=>gast._id.toString() !== guestId).map(guest=>guest._id.toString());
+        await User.updateMany({_id: {$in: guestsIds}, "receivedEvents._id": eventObjectId}, {$set: {"receivedEvents.$[elem].isRead" : false,}}, {arrayFilters: [{"elem._id" : eventObjectId}]});
+
         if(action === 0){
             req.updateCompleted =true;
             res.status(200).json({updateCompleted:true});
@@ -110,7 +114,7 @@ export const updateInvitation =async (req,res, next)=>{
             }
             res.status(200).json({event:req.event,updateCompleted:req.updateCompleted});
             return;
-        }else if(action == -1){
+        }else if(action === -1){
             const result = await Event.updateOne(
                 {_id :eventObjectId},
                 {$pull: {"tasks.$[elem].performers": {_id: guestObjectId}}},
@@ -121,6 +125,11 @@ export const updateInvitation =async (req,res, next)=>{
             // req.result = updateCompleted;
             res.status(200).json({updateCompleted:true});
             return;
+        }else if(action === 2){
+            // update wishes
+            const findEvent = await Event.findOneAndUpdate({ _id: eventObjectId, "gasts._id": guestObjectId},
+            {$set: {wishes: req.body.wishes}});//xiangyu add status:1
+            res.status(200).json({updateCompleted:true});
         }
         next();
     } catch (error) {
